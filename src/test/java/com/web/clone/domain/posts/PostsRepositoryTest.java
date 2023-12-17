@@ -1,7 +1,5 @@
-package com.web.clone.web.domain.posts;
+package com.web.clone.domain.posts;
 
-import com.web.clone.domain.posts.Posts;
-import com.web.clone.domain.posts.PostsRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
