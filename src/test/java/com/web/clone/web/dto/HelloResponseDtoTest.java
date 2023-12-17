@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HelloResponseDtoTest {
-
     @Test
     public void 롬복_기능_테스트() {
         // given
@@ -20,5 +19,4 @@ class HelloResponseDtoTest {
         Assertions.assertThat(dto.getName()).isEqualTo(name);
         Assertions.assertThat(dto.getAmount()).isEqualTo(amount);
     }
-
 }
