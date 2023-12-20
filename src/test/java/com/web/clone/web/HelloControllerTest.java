@@ -1,6 +1,7 @@
 package com.web.clone.web;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,19 @@ public class HelloControllerTest {
     }
 
     @Test
-    public void helloDto가_리턴된다() throws  Exception {
+    public void hello가_리턴된다_컨트롤러에_직접_요청() throws Exception {
+        //given
+        HelloController controller = new HelloController();
+
+        // when
+        String response = controller.hello();
+
+        // then
+        Assertions.assertEquals(response, "hello");
+    }
+
+    @Test
+    public void helloDto가_리턴된다() throws Exception {
         String name = "hello";
         int amount = 1000;
 

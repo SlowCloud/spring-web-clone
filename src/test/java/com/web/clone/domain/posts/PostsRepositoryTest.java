@@ -12,9 +12,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.time.LocalDate;
 import java.util.List;
 
-//@ExtendWith(SpringExtension.class)
-//@SpringBootTest // 이거 testImplementation 안 쓰고 그냥 implementation 쓸 때 넣는 거 같은데 좋은 방법은 아닌 것 같다.
-@DataJpaTest
+@ExtendWith(SpringExtension.class)
+@SpringBootTest // configuration을 불러오기 위해서!
 public class PostsRepositoryTest {
     @Autowired
     PostsRepository postsRepository;
