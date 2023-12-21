@@ -5,7 +5,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -47,7 +46,7 @@ public class PostsRepositoryTest {
     @Test
     public void BaseTimeEntity_등록() {
         // given
-        LocalDate now = LocalDate.of(2019,1,1);
+        LocalDate now = LocalDate.of(2019, 1, 1);
 
         String title = "테스트 게시글";
         String content = "테스트 본문";
