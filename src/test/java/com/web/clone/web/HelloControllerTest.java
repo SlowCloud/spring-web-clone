@@ -1,5 +1,6 @@
 package com.web.clone.web;
 
+import com.web.clone.web.dto.HelloResponseDto;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -24,18 +25,6 @@ public class HelloControllerTest {
         mvc.perform(MockMvcRequestBuilders.get("/hello"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().string(hello));
-    }
-
-    @Test
-    public void hello가_리턴된다_컨트롤러에_직접_요청() throws Exception {
-        //given
-        HelloController controller = new HelloController();
-
-        // when
-        String response = controller.hello();
-
-        // then
-        Assertions.assertEquals(response, "hello");
     }
 
     @Test
