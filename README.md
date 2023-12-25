@@ -120,6 +120,13 @@ webClient 사용법
 https://happycloud-lee.tistory.com/220
 
 
-좀 더 찾아보니, restTemplate는 테스트 코드를 위한 라이브러리가 아니라, 실사용 코드에서도 쓰이는 웹 통신 라이브러리였다.  
-테스트용으로는 mockMvc를 사용하는 것이 맞다고 한다.  
-https://stackoverflow.com/questions/25901985/difference-between-mockmvc-and-resttemplate-in-integration-tests
+좀 더 찾아보니, restTemplate는 테스트 코드를 위한 라이브러리가 아니라, 실사용 코드에서도 쓰이는 웹 통신 라이브러리였다.   
+MockMvc는 컨트롤러 테스트 시, restTemplate는 클라이언트 사이드 테스트를 할 때 사용하는 것이 옳다고 한다.  
+https://stackoverflow.com/questions/25901985/difference-between-mockmvc-and-resttemplate-in-integration-tests  
+https://spring.io/blog/2012/11/12/spring-framework-3-2-rc1-spring-mvc-test-framework/
+
+클라이언트 사이드 테스트? 통합 테스트를 말하는 건지? 잘 모르겠다. 아래 내용을 읽어봐야겠다.  
+https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-framework.html  
+https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-client.html
+
+테스트 시에는 TestRestTemplate를 사용한다. ...
