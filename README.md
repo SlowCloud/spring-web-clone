@@ -24,8 +24,9 @@ Spring Data Jpa 1.5부터, @Configuration에 @EnableJpaAuditing을 추가하면,
 https://velog.io/@max9106/Spring-Configuration%EC%9D%84-%ED%86%B5%ED%95%9C-%EB%B9%88-%EB%93%B1%EB%A1%9D-%EC%8B%9C-%EC%8B%B1%EA%B8%80%ED%86%A4-%EA%B4%80%EB%A6%AC  
 @Configuration을 사용하더라도, 내부 메서드에 @Bean을 붙이지 않으면 싱글턴이 아니게 된다고 한다.
 
-## 컨트롤러 테스트 시 왜 mvc를 쓰는가?
-통합 테스트를 위해서?
+## 컨트롤러 테스트 시 왜 MockMvc를 쓰는가?(왜 컨트롤러를 직접 호출하지 않는가?)
+~~통합 테스트를 위해서?~~  
+외부 의존성이 존재한다면 이를 조립해주어야 하는데, 그걸 일일이 구현하는 것보다는 그냥 스프링을 실행시키고 MockMvc로 쿼리를 날리는 것이 훨씬 편하므로.
 
 ## 테스트 방식의 차이
 HelloController에서는 webMvcTest를 이용해서 테스트를 했고, PostsApiController에서는 @SpringBootTest를 이용해서 테스트를 진행했다.  
