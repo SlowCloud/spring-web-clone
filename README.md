@@ -152,6 +152,8 @@ https://spring.io/guides/tutorials/spring-boot-oauth2/
 
 ### 스프링 시큐리티 아키텍쳐
 
+https://docs.spring.io/spring-security/reference/servlet/architecture.html
+
 우선 리퀘스트를 받으면, HttpServletRequest를 처리하는 FilterChain 서블릿을 생성한다  
 FilterChain 내 Filter들이 URL을 거른다  
 커스텀 Filter를 넣을 수도 있다
@@ -187,8 +189,6 @@ https://github.com/spring-projects/spring-security-samples/tree/6.2.x/servlet/sp
 
 인가 구현은 정말, 정말로 쉽다. 아래 방식을 따르면 된다.
 ```java
-
-@RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -216,20 +216,49 @@ public class SecurityConfig {
 
 원래대로라면 application-oauth.properties에서 토큰 URL 등등을 추가로 설정해주어야 하지만,
 메이저한 서비스들에 대해서는 기본 매핑이 존재해서 id와 secret만 설정해주어도 된다.
+https://velog.io/@nefertiri/%EC%8A%A4%ED%94%84%EB%A7%81-%EB%B6%80%ED%8A%B8-OAuth2-%EC%86%8C%EC%85%9C-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0-01#%EC%8A%A4%ED%94%84%EB%A7%81-%EB%B6%80%ED%8A%B8-%EC%84%A4%EC%A0%95-%ED%8C%8C%EC%9D%BC  
+CommonOAuth2Provider enum에 기록되어 있다.
 
 
 이제 로그인 정보를 저장하는 과정을 구현해야 한다.  
-일단 UserDetails, UserDetailsService를 통해 저장된다. 우리가 구현해야 하는 것은 UserDetailsService와 UserDetails이다.  
+일단 UserDetails, UserDetailsService 인터페이스를 통해 저장된다. 우리가 구현해야 하는 것은 UserDetailsService와 UserDetails이다.  
 OAuth2에선 OAuth2User, OAuth2UserService를 사용하지만, 우선 아이디/비밀번호 기본 로그인을 활용하는 위 객체들부터 알아본다.
 
-사실 스프링 내에서 기본적인 UserDetails와 UserDetailsService가 제공되고 있다.
-UserDetails를 확장한 User가 존재하고,  
-UserDetailsService를 확장한 InMemoryUserDetailsManager, JdbcUserDetailsManager가 존재한다.  
+Username/Password Authentication  
+https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/index.html#servlet-authentication-unpwd
 
-하지만 실 서비스에서 사용할 정도로 UserDetails가 가지는 정보가 충분하지 않아서, 이를 확장하여 커스텀 UserDetailsService를 만들어 넣어준다.  
+UserDetails  
+https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/user-details.html
 
+UserDetailsService
+https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/user-details-service.html
+
+사실 스프링 내에서 기본적인 UserDetails와 UserDetailsService의 구현체가 제공되고 있다.
+UserDetails를 구현한 User가 존재하고,  
+UserDetailsService를 구현한 InMemoryUserDetailsManager, JdbcUserDetailsManager가 존재한다.  
+
+하지만 실 서비스에서 사용할 정도로 User가 가지는 정보가 충분하지 않아서, 위 기능들을 구현하는 커스텀 UserDetailsService를 만들어 넣어준다.  
+
+책에서는 UserInfoEndpoint에 직접 Service를 주입해주는 모습을 보여줬지만,
+Customizer.setDefaults를 박아주고 SecurityConfig 내 Bean으로 UserDetailsService를 등록해줘도 된다.
 
 
 
 아래 내용을 읽는 중...  
 https://velog.io/@dnrwhddk1/Spring-JwtTokenProvider-%EA%B5%AC%ED%98%84
+
+
+### ETC
+
+https://github.com/woowacourse-teams/2023-diggin-room/blob/main/backend/src/main/java/com/digginroom/digginroom/controller/MemberLoginController.java  
+세션을 통한 로그인 구현
+
+https://github.com/woowacourse-teams/2022-nae-pyeon/blob/develop/backend/src/main/java/com/woowacourse/naepyeon/config/AuthenticationPrincipalConfig.java  
+인터셉터를 통한 로그인 구현
+
+https://github.com/woowacourse-teams/2020-6rinkers/blob/dev/back/cocktailpick-api/src/main/java/com/cocktailpick/api/config/security/SecurityConfig.java  
+시큐리티 필터체인 이용한 oauth2 로그인 구현
+
+https://kbwplace.tistory.com/165  
+https://velog.io/@kimdy0915/%EC%9D%B8%EC%A6%9D-%EB%B0%A9%EC%8B%9D%EC%BF%A0%ED%82%A4-%EC%84%B8%EC%85%98-JWT%EC%97%90-%EB%8C%80%ED%95%B4-%EC%95%8C%EC%95%84%EB%B3%B4%EC%9E%90  
+세션, 토큰, 쿠키, JWT
