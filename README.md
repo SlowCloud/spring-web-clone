@@ -129,4 +129,107 @@ https://spring.io/blog/2012/11/12/spring-framework-3-2-rc1-spring-mvc-test-frame
 https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-framework.html  
 https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-client.html
 
-테스트 시에는 TestRestTemplate를 사용한다. ...
+컨트롤러 테스트 시 mockMvc, 통합 테스트 시 testRestTemplate  
+https://www.javaguides.net/2023/12/mockmvc-vs-testresttemplate.html
+
+## 로그인 구현
+
+https://spring.io/guides/gs/securing-web/  
+https://spring.io/guides/tutorials/spring-boot-oauth2/
+
+아마 가장 긴 내용을 할애할 것 같다. 책 내용에서도 제대로 설명이 되어 있지 않고, 스프링 문서도 그렇게 친절하지 않다.  
+아래 내용들은 책에서 딱히 가르쳐주지 않는 내용들이다. 웹서핑과 타 서적들을 참고해서 작성했다.  
+어디에서 정보를 얻었는지 최대한 링크와 서적을 기록해 둘 예정이다.
+
+스프링 공식 문서 내에서도 예시 코드가 스프링부트 2.x에서 멈춰 있다. 그래도 인터넷에 떠도는 구식 코드들보다는 최근이므로 이를 따랐다.
+
+
+내내 컴파일 안 되서 아래 내용 찾아보면서 3일 정도 박았는데, 스프링 시큐리티 의존성을 안 넣어서 컴파일이 터지는 거였다.
+꼭, 꼭 아래 의존성을 추가하자..
+```
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+```
+
+### 스프링 시큐리티 아키텍쳐
+
+우선 리퀘스트를 받으면, HttpServletRequest를 처리하는 FilterChain 서블릿을 생성한다  
+FilterChain 내 Filter들이 URL을 거른다  
+커스텀 Filter를 넣을 수도 있다
+
+이 안에 스프링 어플과 연결해주는 FilterChainProxy implements DelegatingFilterProxy가 존재한다. 필터 큐 내부에 있음(묘사 상으로는)  
+요녀셕이 SecurityFilterChain을 호출해서 사용한다  
+이 SecurityFilterChain이라는 녀석을 스프링 SecurityConfig에서 작성한다  
+조금 찾아보니, 저 DelegatingFilterProxy라는 녀석이 최근에 생긴 모양이다. [링크](https://mangkyu.tistory.com/221)
+
+최신 버전에서는 config에 webSecurityConfigurerAdaptor를 상속시키지 않고, @EnableWebSecurity만 붙여주고 SecurityFilterChain 빈을 달면 된다
+
+SecurityFilterChain 빈 메소드에서 HttpSecurity라는 파라미터를 넘겨받는데, 이 녀석이 SecurityFilterChain 빌더다.  
+이 녀석을 통해서 Filter를 달아주고 build해주면 SecurityFilterChain이 만들어진다.
+
+
+## Filter vs Interceptor
+
+깃허브에서 스프링을 통한 보안 처리를 둘러보니, 인터셉터로 보안을 구현하는 경우를 볼 수 있었다.
+
+https://mangkyu.tistory.com/173  
+관련 내용을 찾아보니, Filter는 [J2EE 표준](https://ko.wikipedia.org/wiki/%EC%9E%90%EC%B9%B4%EB%A5%B4%ED%83%80_EE)을 따르는 구조체이고, 인터셉터는 스프링 내에서 처리하는 기술이었다.
+
+일단 Interceptor를 사용하는 방식은 구식이므로 스프링 시큐리티를 이용한 필터를 사용할 것을 권장하고 있다.(책 163p)
+
+## OAuth2 로그인
+
+우선 책에서 요구하는 대로 구글 OAuth2를 생성해서 application-oauth.properties까지 작성한다.
+
+https://docs.spring.io/spring-security/reference/servlet/oauth2/login/core.html#oauth2login-sample-initial-setup  
+https://github.com/spring-projects/spring-security-samples/tree/6.2.x/servlet/spring-boot/java/oauth2/login  
+위 링크는 OAuth2를 구현하는 스프링 공식 설명서이고, 아래 링크는 공식 예제 코드이다.
+
+
+인가 구현은 정말, 정말로 쉽다. 아래 방식을 따르면 된다.
+```java
+
+@RequiredArgsConstructor
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // 접근제어(인가, Authorization)
+                .authorizeHttpRequests(authorize -> authorize
+                        // 모든 권한이 접근 가능
+                        .requestMatchers("/", "/css/**", "/images/**", "/js/**").permitAll()
+                        // USER(게스트) 권한이 있어야 접근 가능
+                        .requestMatchers("/api/v1/**").hasRole(Role.USER.name())
+                        // 그 외 주소는 인증된 사용자들만 접근 가능
+                        .anyRequest().authenticated()
+                )
+
+                // oauth2 로그인 - 스프링 기본 설정
+                .oauth2Login(Customizer.withDefaults());
+        return http.build();
+    }
+}
+```
+위와 같이 작성하면 {baseUrl}/login 페이지가 자동으로 작성되고, 해당 페이지에서 로그인을 할 수 있다.  
+메인 페이지에서 글 작성 버튼을 눌러 글 작성 페이지로 이동하면, 자동으로 구글 OAuth2 로그인 페이지로 리다이렉트된다.
+
+원래대로라면 application-oauth.properties에서 토큰 URL 등등을 추가로 설정해주어야 하지만,
+메이저한 서비스들에 대해서는 기본 매핑이 존재해서 id와 secret만 설정해주어도 된다.
+
+
+이제 로그인 정보를 저장하는 과정을 구현해야 한다.  
+일단 UserDetails, UserDetailsService를 통해 저장된다. 우리가 구현해야 하는 것은 UserDetailsService와 UserDetails이다.  
+OAuth2에선 OAuth2User, OAuth2UserService를 사용하지만, 우선 아이디/비밀번호 기본 로그인을 활용하는 위 객체들부터 알아본다.
+
+사실 스프링 내에서 기본적인 UserDetails와 UserDetailsService가 제공되고 있다.
+UserDetails를 확장한 User가 존재하고,  
+UserDetailsService를 확장한 InMemoryUserDetailsManager, JdbcUserDetailsManager가 존재한다.  
+
+하지만 실 서비스에서 사용할 정도로 UserDetails가 가지는 정보가 충분하지 않아서, 이를 확장하여 커스텀 UserDetailsService를 만들어 넣어준다.  
+
+
+
+
+아래 내용을 읽는 중...  
+https://velog.io/@dnrwhddk1/Spring-JwtTokenProvider-%EA%B5%AC%ED%98%84
