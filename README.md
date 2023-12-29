@@ -141,16 +141,20 @@ https://spring.io/guides/tutorials/spring-boot-oauth2/
 아래 내용들은 책에서 딱히 가르쳐주지 않는 내용들이다. 웹서핑과 타 서적들을 참고해서 작성했다.  
 어디에서 정보를 얻었는지 최대한 링크와 서적을 기록해 둘 예정이다.
 
-스프링 공식 문서 내에서도 예시 코드가 스프링부트 2.x에서 멈춰 있다. 그래도 인터넷에 떠도는 구식 코드들보다는 최근이므로 이를 따랐다.
-
-
-내내 컴파일 안 되서 아래 내용 찾아보면서 3일 정도 박았는데, 스프링 시큐리티 의존성을 안 넣어서 컴파일이 터지는 거였다.
-꼭, 꼭 아래 의존성을 추가하자..
+내내 컴파일 안 되서 아래 내용들을 찾아보면서 3일 정도 박았는데, 스프링 시큐리티 의존성을 안 넣어서 컴파일이 터지는 거였다.
+책과 예제 코드에는 아래 의존성이 없지만, 구현을 원한다면 꼭, 꼭 아래 의존성을 추가하자..
 ```
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 ```
 
+스프링 공식 문서 내에서도 예시 코드가 스프링부트 2.x에서 멈춰 있다. 그래도 인터넷에 떠도는 구식 코드들보다는 최근이므로 이를 따랐다.  
+
+내용이 너무 지저분하다. 한번 정리를 해야겠다.
+
+
 ### 스프링 시큐리티 아키텍쳐
+
+> tl;dr  우린 SecurityFilterChain을 이용해서 시큐리티를 구현한다.
 
 https://docs.spring.io/spring-security/reference/servlet/architecture.html
 
@@ -169,7 +173,51 @@ SecurityFilterChain 빈 메소드에서 HttpSecurity라는 파라미터를 넘�
 이 녀석을 통해서 Filter를 달아주고 build해주면 SecurityFilterChain이 만들어진다.
 
 
-## Filter vs Interceptor
+### 로그인 시 Spring 내부에서 일어나는 일
+
+#### 도움이 된 글들
+- [스프링 시큐리티 - 회원가입 : baeldung.com](https://www.baeldung.com/registration-with-spring-mvc-and-spring-security)  
+  - 여기서 UserDetailsService를 어떻게 구현하는 것이 좋은지 확인함.
+- [스프링 시큐리티 - 로그아웃 : baeldung.com](https://www.baeldung.com/spring-security-logout)  
+  - 여기서 세션 끊는 방법을 확인함.
+- [스프링 시큐리티 - OAuth2 로그인 : baeldung.com](https://www.baeldung.com/spring-security-5-oauth2-login)
+  - 여기서 사용자 정보 접근 방법을 확인함. RestTemplate까지는 좀...
+- [로그인 구현 방법 정리 - 티스토리](https://chb2005.tistory.com/173)
+  - 참고하기 좋은 곳. 만족스럽진 않았지만 대강의 흐름을 확인할 수 있다.
+
+그래도 역시 제대로 배우려면 돈 내고 배우는 게 맞는 것 같다. 아래 지식들은 전부 야매 지식이다.
+
+인텔리제이 울티메이트였다면... UML로 객체들을 빠르게 찾아서 정리했을텐데...
+
+> tl;dr  없다. 아래 내용이 정말로 많이 요약한 내용이다.  
+
+- 사용자에 대한 정보는 UserDetailsService에 UserDetails로 저장된다. 여기엔 아이디, 비밀번호와 같은 정보가 저장되어 있다.
+- UserDetailsService, UserDetails는 인터페이스다. 이를 확장해서 저장할 정보를 추가하거나 추가 기능을 수행하도록 할 수 있다.
+- 스프링은 기본적으로 세션을 이용한 로그인을 한다. 로그인 시, UserDetailsService에서 사용자 정보를 조회한 뒤, 사용자가 존재한다면 세션을 연결한다.
+  - 어떻게 세션이 생성되고 관리되는지는 [다음 링크](https://docs.spring.io/spring-security/reference/servlet/authentication/persistence.html)를 참고하는 것을 추천한다.
+  - 대충 세션이 생성되고 관리된다는 것만 확인하고 넘어가도 좋다. 더 깊은 내용을 원한다면, [다음 링크](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html)를 추천한다.
+- 세션 연결 토큰은 JSESSIONID로 사용자에게 전송되며, 이를 통해 로그인이 유지된다. 로그아웃 시에는 이 쿠키를 제거해주어야 한다.
+- 서버에서는 SecurityContextHolder에 있는 SecurityContext를 통해서 현재 로그인한 사용자의 정보를 조회할 수 있다.
+  - 어떻게 여기에 UserDetails의 정보가 저장되는지 궁금하다면, [다음 링크](https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/dao-authentication-provider.html)를 참고하는 것을 추천한다.
+  - 간단히 요약하자면, DaoAuthenticationProvider가 UserDetails를 검사한 뒤, 인증에 성공하면 UsernamePasswordAuthenticationToken을 SecurityContextHolder에 등록하는 것이다.
+  - DaoAuthenticationProvider 이후 SecurityContextHolder까지의 과정이 궁금하다면, [다음 링크](https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html)를 추천한다. AuthenticationManager가 DaoAuthenticationProvider의 위치다. 다이어그램을 통해 전체적인 흐름을 확인할 수 있다.
+- SecurityContext는 principal, credentials, authorities 정보를 가지고 있다.
+- principal은 username, credentials는 password, authorities는 role에 대한 정보라고 생각하면 된다. 이는 UserDetails의 정보와 같다.(구조체가 같은지는 모르겠지만, 가지는 정보는 같다.) [참고](https://docs.spring.io/spring-security/reference/servlet/authentication/architecture.html#servlet-authentication-authentication)
+
+작성중...
+
+https://m.boostcourse.org/web316/lecture/16803 세션 관련 정보??  
+
+값 가져오는 3가지 방법들  
+https://itstory.tk/entry/Spring-Security-%ED%98%84%EC%9E%AC-%EB%A1%9C%EA%B7%B8%EC%9D%B8%ED%95%9C-%EC%82%AC%EC%9A%A9%EC%9E%90-%EC%A0%95%EB%B3%B4-%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0  
+https://kogle.tistory.com/208
+
+- 로그인 중인 사용자의 정보는 컨트롤러 단에서 Authentication 혹은 Principal을 주입받거나, @AuthenticationPrincipal로 필요한 값만 가져오거나, SecurityContextHolder에서 직접 가져올 수 있다.
+  - @AuthenticationPrincipal을 이용한 방법이 가장 좋은 것 같다. 스프링 공식 문서에서 자주 보인다.
+
+### Filter vs Interceptor
+
+> tl;dr  필터를 쓰는 게 좋다.
 
 깃허브에서 스프링을 통한 보안 처리를 둘러보니, 인터셉터로 보안을 구현하는 경우를 볼 수 있었다.
 
@@ -178,7 +226,7 @@ https://mangkyu.tistory.com/173
 
 일단 Interceptor를 사용하는 방식은 구식이므로 스프링 시큐리티를 이용한 필터를 사용할 것을 권장하고 있다.(책 163p)
 
-## OAuth2 로그인
+### OAuth2 로그인
 
 우선 책에서 요구하는 대로 구글 OAuth2를 생성해서 application-oauth.properties까지 작성한다.
 
@@ -218,31 +266,6 @@ public class SecurityConfig {
 메이저한 서비스들에 대해서는 기본 매핑이 존재해서 id와 secret만 설정해주어도 된다.
 https://velog.io/@nefertiri/%EC%8A%A4%ED%94%84%EB%A7%81-%EB%B6%80%ED%8A%B8-OAuth2-%EC%86%8C%EC%85%9C-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0-01#%EC%8A%A4%ED%94%84%EB%A7%81-%EB%B6%80%ED%8A%B8-%EC%84%A4%EC%A0%95-%ED%8C%8C%EC%9D%BC  
 CommonOAuth2Provider enum에 기록되어 있다.
-
-
-이제 로그인 정보를 저장하는 과정을 구현해야 한다.  
-일단 UserDetails, UserDetailsService 인터페이스를 통해 저장된다. 우리가 구현해야 하는 것은 UserDetailsService와 UserDetails이다.  
-OAuth2에선 OAuth2User, OAuth2UserService를 사용하지만, 우선 아이디/비밀번호 기본 로그인을 활용하는 위 객체들부터 알아본다.
-
-Username/Password Authentication  
-https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/index.html#servlet-authentication-unpwd
-
-UserDetails  
-https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/user-details.html
-
-UserDetailsService
-https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/user-details-service.html
-
-사실 스프링 내에서 기본적인 UserDetails와 UserDetailsService의 구현체가 제공되고 있다.
-UserDetails를 구현한 User가 존재하고,  
-UserDetailsService를 구현한 InMemoryUserDetailsManager, JdbcUserDetailsManager가 존재한다.  
-
-하지만 실 서비스에서 사용할 정도로 User가 가지는 정보가 충분하지 않아서, 위 기능들을 구현하는 커스텀 UserDetailsService를 만들어 넣어준다.  
-
-책에서는 UserInfoEndpoint에 직접 Service를 주입해주는 모습을 보여줬지만,
-Customizer.setDefaults를 박아주고 SecurityConfig 내 Bean으로 UserDetailsService를 등록해줘도 된다.
-
-
 
 아래 내용을 읽는 중...  
 https://velog.io/@dnrwhddk1/Spring-JwtTokenProvider-%EA%B5%AC%ED%98%84
