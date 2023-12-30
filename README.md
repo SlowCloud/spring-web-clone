@@ -105,6 +105,9 @@ PostsApiControllerTest에서 Posts_수정 테스트 작성 중 exchange에서 �
 아래 링크에서 힌트를 얻었다.  
 https://shanepark.tistory.com/331
 
+<details>
+<summary>그 외</summary>
+
 그 외에도 조금 찾아보니 restTemplate가 deprecated된다는 이야기도 있어서 mockMvc로 구현한 코드도 넣어뒀다.
 https://effortguy.tistory.com/285  
 https://adjh54.tistory.com/234
@@ -114,7 +117,7 @@ https://github.com/jojoldu/freelec-springboot2-webservice/blob/master/src/test/j
 
 
 요즘은 restTemplate 대신 webClient를 사용할 것을 권장하는 것 같다.    
-https://blog.naver.com/hj_kim97/222295259904  
+https://blog.naver.com/hj_kim97/222295259904
 
 webClient 사용법  
 https://happycloud-lee.tistory.com/220
@@ -132,37 +135,40 @@ https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-client
 컨트롤러 테스트 시 mockMvc, 통합 테스트 시 testRestTemplate  
 https://www.javaguides.net/2023/12/mockmvc-vs-testresttemplate.html
 
+</details>
+
 ## 로그인 구현
 
-https://spring.io/guides/gs/securing-web/  
-https://spring.io/guides/tutorials/spring-boot-oauth2/
-
-아마 가장 긴 내용을 할애할 것 같다. 책 내용에서도 제대로 설명이 되어 있지 않고, 스프링 문서도 그렇게 친절하지 않다.  
-아래 내용들은 책에서 딱히 가르쳐주지 않는 내용들이다. 웹서핑과 타 서적들을 참고해서 작성했다.  
-어디에서 정보를 얻었는지 최대한 링크와 서적을 기록해 둘 예정이다.
-
-내내 컴파일 안 되서 아래 내용들을 찾아보면서 3일 정도 박았는데, 스프링 시큐리티 의존성을 안 넣어서 컴파일이 터지는 거였다.
-책과 예제 코드에는 아래 의존성이 없지만, 구현을 원한다면 꼭, 꼭 아래 의존성을 추가하자..
-```
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-```
-
-스프링 공식 문서 내에서도 예시 코드가 스프링부트 2.x에서 멈춰 있다. 그래도 인터넷에 떠도는 구식 코드들보다는 최근이므로 이를 따랐다.  
-
-내용이 너무 지저분하다. 한번 정리를 해야겠다.
-
+아래 내용들은 책에서 딱히 가르쳐주지 않는 내용들이다. 웹서핑과 타 서적들을 참고해서 작성했다. 어디에서 정보를 얻었는지 최대한 링크와 서적을 기록해 둘 예정이다.
 
 ### 스프링 시큐리티 아키텍쳐
 
-> tl;dr  우린 SecurityFilterChain을 이용해서 시큐리티를 구현한다.
+> tl;dr  SecurityFilterChain을 이용해서 시큐리티를 구현한다.
 
-https://docs.spring.io/spring-security/reference/servlet/architecture.html
+[스프링 시큐리티 아키텍쳐 - 공식 레퍼런스 Doc.](https://docs.spring.io/spring-security/reference/servlet/architecture.html)
+
+> ChatGPT의 도움을 받아 글을 정리하였음.  
+
+> 필자의 독해력 부족으로, FilterChainProxy에 대한 부분에 부정확한 내용이 있을 수 있음.
+
+1. 클라이언트로부터의 리퀘스트를 받으면, `HttpServletRequest`를 처리하는 `FilterChain` 서블릿이 생성된다.
+2. `FilterChain` 내부의 Filter들이 URL을 걸러내는데, 필요하다면 커스텀 Filter를 추가할 수 있다.
+3. 이 과정에서 스프링 어플리케이션과의 연결을 도와주는 `DelegatingFilterProxy`가 등장한다. 이는 필터 큐 내부에 위치한다.
+4. `DelegatingFilterProxy` 내 `FilterChainProxy`는 `SecurityFilterChain`을 호출하여 사용한다. `SecurityFilterChain`은 스프링의 `SecurityConfig`에서 설정된다.
+5. 최근 버전에서는 `webSecurityConfigurerAdaptor`를 상속시키지 않고, `@EnableWebSecurity` 어노테이션만 붙여주면서 `SecurityFilterChain` 빈을 등록하는 방식이 일반적이다.
+6. `SecurityFilterChain` 빈을 생성하는 메소드에서는 `HttpSecurity`라는 파라미터를 받아오며, 이는 `SecurityFilterChain`을 구축하는 빌더 역할을 한다.
+7. `HttpSecurity`를 통해 필요한 Filter를 추가하고, `build` 메소드를 호출하여 `SecurityFilterChain`을 생성할 수 있다.
+
+참고 링크: [DelegatingFilterProxy에 관한 블로그 글](https://mangkyu.tistory.com/221)
+
+<details>
+<summary>정리 이전 내용(원글)</summary>
 
 우선 리퀘스트를 받으면, HttpServletRequest를 처리하는 FilterChain 서블릿을 생성한다  
 FilterChain 내 Filter들이 URL을 거른다  
 커스텀 Filter를 넣을 수도 있다
 
-이 안에 스프링 어플과 연결해주는 FilterChainProxy implements DelegatingFilterProxy가 존재한다. 필터 큐 내부에 있음(묘사 상으로는)  
+이 안에 스프링 어플과 연결해주는 FilterChainProxy implements DelegatingFilterProxy가 존재한다. 필터 큐 내부에 있음(묘사 상으로는) // 이거 뭔가 잘못 이해하고 적었다.  
 요녀셕이 SecurityFilterChain을 호출해서 사용한다  
 이 SecurityFilterChain이라는 녀석을 스프링 SecurityConfig에서 작성한다  
 조금 찾아보니, 저 DelegatingFilterProxy라는 녀석이 최근에 생긴 모양이다. [링크](https://mangkyu.tistory.com/221)
@@ -172,10 +178,13 @@ FilterChain 내 Filter들이 URL을 거른다
 SecurityFilterChain 빈 메소드에서 HttpSecurity라는 파라미터를 넘겨받는데, 이 녀석이 SecurityFilterChain 빌더다.  
 이 녀석을 통해서 Filter를 달아주고 build해주면 SecurityFilterChain이 만들어진다.
 
+</details>
 
 ### 로그인 시 Spring 내부에서 일어나는 일
 
-#### 도움이 된 글들
+<details>
+<summary>도움이 된 글</summary>
+
 - [스프링 시큐리티 - 회원가입 : baeldung.com](https://www.baeldung.com/registration-with-spring-mvc-and-spring-security)  
   - 여기서 UserDetailsService를 어떻게 구현하는 것이 좋은지 확인함.
 - [스프링 시큐리티 - 로그아웃 : baeldung.com](https://www.baeldung.com/spring-security-logout)  
@@ -184,12 +193,14 @@ SecurityFilterChain 빈 메소드에서 HttpSecurity라는 파라미터를 넘�
   - 여기서 사용자 정보 접근 방법을 확인함. RestTemplate까지는 좀...
 - [로그인 구현 방법 정리 - 티스토리](https://chb2005.tistory.com/173)
   - 참고하기 좋은 곳. 만족스럽진 않았지만 대강의 흐름을 확인할 수 있다.
+- [로그인 정보(UserDetails) 가져오기 - 티스토리](https://velog.io/@jyleedev/AuthenticationPrincipal-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EC%A0%95%EB%B3%B4-%EB%B0%9B%EC%95%84%EC%98%A4%EA%B8%B0)
+  - 로그인한 사용자 정보 가져오기.
+
+</details>
 
 그래도 역시 제대로 배우려면 돈 내고 배우는 게 맞는 것 같다. 아래 지식들은 전부 야매 지식이다.
 
-인텔리제이 울티메이트였다면... UML로 객체들을 빠르게 찾아서 정리했을텐데...
-
-> tl;dr  없다. 아래 내용이 정말로 많이 요약한 내용이다.  
+> tl;dr  아래 내용에서 1번째 칸의 목록만 읽으면 된다.
 
 - 사용자에 대한 정보는 UserDetailsService에 UserDetails로 저장된다. 여기엔 아이디, 비밀번호와 같은 정보가 저장되어 있다.
 - UserDetailsService, UserDetails는 인터페이스다. 이를 확장해서 저장할 정보를 추가하거나 추가 기능을 수행하도록 할 수 있다.
@@ -201,19 +212,119 @@ SecurityFilterChain 빈 메소드에서 HttpSecurity라는 파라미터를 넘�
   - 어떻게 여기에 UserDetails의 정보가 저장되는지 궁금하다면, [다음 링크](https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/dao-authentication-provider.html)를 참고하는 것을 추천한다.
   - 간단히 요약하자면, DaoAuthenticationProvider가 UserDetails를 검사한 뒤, 인증에 성공하면 UsernamePasswordAuthenticationToken을 SecurityContextHolder에 등록하는 것이다.
   - DaoAuthenticationProvider 이후 SecurityContextHolder까지의 과정이 궁금하다면, [다음 링크](https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html)를 추천한다. AuthenticationManager가 DaoAuthenticationProvider의 위치다. 다이어그램을 통해 전체적인 흐름을 확인할 수 있다.
-- SecurityContext는 principal, credentials, authorities 정보를 가지고 있다.
-- principal은 username, credentials는 password, authorities는 role에 대한 정보라고 생각하면 된다. 이는 UserDetails의 정보와 같다.(구조체가 같은지는 모르겠지만, 가지는 정보는 같다.) [참고](https://docs.spring.io/spring-security/reference/servlet/authentication/architecture.html#servlet-authentication-authentication)
+- SecurityContext는 Authentication을 가지고 있고, Authentication에는 principal, credentials, authorities 정보를 가지고 있다.
+- principal은 username, credentials는 password, authorities는 role에 대한 정보라고 생각하면 된다. 이는 UserDetails의 정보와 같다. [참고](https://docs.spring.io/spring-security/reference/servlet/authentication/architecture.html#servlet-authentication-authentication)
+- 로그인 중인 사용자의 정보는 컨트롤러 파라미터에서 @AuthenticationPrincipal User user를 작성하여 가져올 수 있다. 커스텀 UserDetails를 작성했다면, 해당 객체를 적으면 된다.
+  -  그 외에도 Authentication 혹은 Principal을 주입받거나, SecurityContextHolder에서 직접 가져오는 방법이 존재한다.
 
-작성중...
+### FormLogin 구현
 
-https://m.boostcourse.org/web316/lecture/16803 세션 관련 정보??  
+```java
 
-값 가져오는 3가지 방법들  
-https://itstory.tk/entry/Spring-Security-%ED%98%84%EC%9E%AC-%EB%A1%9C%EA%B7%B8%EC%9D%B8%ED%95%9C-%EC%82%AC%EC%9A%A9%EC%9E%90-%EC%A0%95%EB%B3%B4-%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0  
-https://kogle.tistory.com/208
+@RequiredArgsConstructor
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig { 
+  // 비밀번호 암호화
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder(); // 암호화 도구(BCrypt 알고리즘 사용)
+  }
+  
+  // 메모리에서 작동하는 빌트인 UserDetailsService
+  @Bean
+  public InMemoryUserDetailsManager userDetailsService() {
+    UserDetails admin = User.builder() // 사용자
+            .username("admin") // id/username
+            .password(passwordEncoder().encode("adminpassword")) // password
+            .roles(Role.ADMIN.name())
+            .build();
+    return new InMemoryUserDetailsManager(admin); // 사용자 리포지토리(in-memory)
+  }
+  
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+            // 접근제어
+            .authorizeHttpRequests(authorize -> authorize
+                    // 모든 권한이 접근 가능
+                    .requestMatchers("/", "/css/**", "/images/**", "/js/**", "h2-console/**").permitAll()
+                    // 어드민 역할이 있어야 접근 가능
+                    .requestMatchers("/api/v1/**").hasAnyRole("ADMIN")
+                    // 그 외 주소는 인증된 사용자들만 접근 가능
+                    .anyRequest().authenticated()
+            )
 
-- 로그인 중인 사용자의 정보는 컨트롤러 단에서 Authentication 혹은 Principal을 주입받거나, @AuthenticationPrincipal로 필요한 값만 가져오거나, SecurityContextHolder에서 직접 가져올 수 있다.
-  - @AuthenticationPrincipal을 이용한 방법이 가장 좋은 것 같다. 스프링 공식 문서에서 자주 보인다.
+            // oauth2 이전에 기본적인 아이디/비밀번호 로그인부터 구현
+            .formLogin(Customizer.withDefaults())
+
+            // 로그아웃 기본체.
+            // 이 녀석으로 하면 /logout으로 이동하면 알아서 로그아웃이 된다.
+            .logout(Customizer.withDefaults());
+
+    return http.build();
+  }
+}
+```
+```java
+
+@RequiredArgsConstructor
+@Controller
+@Log4j2
+public class IndexController {
+    private final PostsService postsService;
+
+    // User를 가져와서 로그 출력
+    @GetMapping("/")
+    public String index(Model model, @AuthenticationPrincipal User user) {
+        log.info(user);
+        model.addAttribute("posts", postsService.findAllDesc());
+        return "index";
+    }
+
+    @GetMapping("/posts/save")
+    public String postsSave() {
+        return "posts-save";
+    }
+
+    @GetMapping("/posts/update/{id}")
+    public String postsUpdate(@PathVariable("id") Long id, Model model) {
+        PostsResponseDto dto = postsService.findById(id);
+        model.addAttribute("post", dto);
+        return "posts-update";
+    }
+}
+```
+
+위와 같이 작성하면, 글 작성 버튼을 누르면 /login으로 이동하게 되고, 스프링이 자동으로 작성해 준 Form을 통해 로그인을 진행할 수 있다.  
+아이디에 admin, 비밀번호에 adminpassword를 적고 전송하면 로그인이 된다.  
+로그인 후, /로 이동하면 스프링 프레임워크 로그에 로그인한 사용자의 정보가 출력된다.  
+로그아웃 후, /로 이동하면 null이 출력된다.
+
+### 트러블 슈팅
+
+#### 컴파일 문제
+
+SecurityConfig 작성 후 컴파일이 안 되서 3일 정도 정체되었는데, 스프링 시큐리티 의존성을 안 넣어서 컴파일이 터지는 거였다.
+책과 예제 코드에는 아래 의존성이 없지만, 구현을 원한다면 꼭, 꼭 아래 의존성을 추가하자.
+```
+implementation 'org.springframework.boot:spring-boot-starter-security'
+```
+
+#### 로그인 이후 Role 검사에서 문제가 발생
+
+스프링 로그를 읽어보니, 스프링 시작 시 JDBC 부분에서 오류가 나고 있었다.  
+오류 메시지를 이해하진 못했지만, 대충 User 테이블을 만들면서 충돌이 나지 않았을까 짐작했다.  
+직접 작성한 User의 테이블 이름을 USER_CUSTOM으로 생성하도록 수정한 뒤 오류 로그가 없어졌고, Authority/Role 검사 문제도 해결되었다.
+
+이게 User implements UserDetails랑 충돌하는 건지, 아니면 h2 내에 User가 이미 존재해서 터지는 건지 모르겠다. 이건 조금 더 알아봐야겠다.
+
+<br>
+<hr>
+
+## 기타(글 임시 보관)
+
+<details>
 
 ### Filter vs Interceptor
 
@@ -226,7 +337,10 @@ https://mangkyu.tistory.com/173
 
 일단 Interceptor를 사용하는 방식은 구식이므로 스프링 시큐리티를 이용한 필터를 사용할 것을 권장하고 있다.(책 163p)
 
+
 ### OAuth2 로그인
+
+> 작성중. 아래 내용은 수정될 예정
 
 우선 책에서 요구하는 대로 구글 OAuth2를 생성해서 application-oauth.properties까지 작성한다.
 
@@ -285,3 +399,5 @@ https://github.com/woowacourse-teams/2020-6rinkers/blob/dev/back/cocktailpick-ap
 https://kbwplace.tistory.com/165  
 https://velog.io/@kimdy0915/%EC%9D%B8%EC%A6%9D-%EB%B0%A9%EC%8B%9D%EC%BF%A0%ED%82%A4-%EC%84%B8%EC%85%98-JWT%EC%97%90-%EB%8C%80%ED%95%B4-%EC%95%8C%EC%95%84%EB%B3%B4%EC%9E%90  
 세션, 토큰, 쿠키, JWT
+
+</details>
