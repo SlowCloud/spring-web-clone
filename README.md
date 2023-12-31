@@ -16,46 +16,43 @@
 ## 트러블 슈팅
 
 ### EnableJpaAuditing 이후 오류 발생
-책을 따라 실습하면서 @EnableJpaAuditing을 Application에 붙인 뒤, HelloControllerTest에서 오류가 발생했다.
 
-https://velog.io/@suujeen/Error-creating-bean-with-name-jpaAuditingHandler  
-EnableJpaAuditng을 Configuration으로 분리하는 걸로 해결했다.
+책을 따라 실습하면서 `@EnableJpaAuditing`을 Application에 붙인 뒤, HelloControllerTest에서 오류가 발생했다.
+
+EnableJpaAuditng을 Configuration으로 분리하는 걸로 해결했다. [참고](https://velog.io/@suujeen/Error-creating-bean-with-name-jpaAuditingHandler )
+```java
+@EnableJpaAuditing
+@Configuration
+public class JpaAuditingConfiguration {
+}
+```
 
 #### 왜 해결됐는가?
-https://docs.spring.io/spring-data/jpa/docs/1.7.0.DATAJPA-580-SNAPSHOT/reference/html/auditing.html  
-Spring Data Jpa 1.5부터, @Configuration에 @EnableJpaAuditing을 추가하면, JpaAuditing이 필요한 빈들이 해당 Configuration에 자동 등록되어 실행된다고 한다.
 
-https://velog.io/@max9106/Spring-Configuration%EC%9D%84-%ED%86%B5%ED%95%9C-%EB%B9%88-%EB%93%B1%EB%A1%9D-%EC%8B%9C-%EC%8B%B1%EA%B8%80%ED%86%A4-%EA%B4%80%EB%A6%AC  
-@Configuration을 사용하더라도, 내부 메서드에 @Bean을 붙이지 않으면 싱글턴이 아니게 된다고 한다.
+Spring Data Jpa 1.5부터, `@Configuration`에 `@EnableJpaAuditing`을 추가하면, JpaAuditing이 필요한 빈들이 해당 Configuration에 자동 등록되어 실행된다고 한다. [참고](https://docs.spring.io/spring-data/jpa/docs/1.7.0.DATAJPA-580-SNAPSHOT/reference/html/auditing.html)
 
-### 컨트롤러 테스트 시 왜 MockMvc를 쓰는가?(왜 컨트롤러를 직접 호출하지 않는가?)
-~~통합 테스트를 위해서?~~  
-외부 의존성이 존재한다면 이를 조립해주어야 하는데, 그걸 일일이 구현하는 것보다는 그냥 스프링을 실행시키고 MockMvc로 쿼리를 날리는 것이 훨씬 편하므로.
+`@Configuration`을 사용하더라도, 내부 메서드에 `@Bean`을 붙이지 않으면 싱글턴이 아니게 된다고 한다. [참고](https://velog.io/@max9106/Spring-Configuration%EC%9D%84-%ED%86%B5%ED%95%9C-%EB%B9%88-%EB%93%B1%EB%A1%9D-%EC%8B%9C-%EC%8B%B1%EA%B8%80%ED%86%A4-%EA%B4%80%EB%A6%AC)
 
 ### 테스트 방식의 차이
-HelloController에서는 webMvcTest를 이용해서 테스트를 했고, PostsApiController에서는 @SpringBootTest를 이용해서 테스트를 진행했다.  
-다른 방식으로 테스트를 한 이유를 잘 모르겠다. 다양한 테스트 방법을 보여주기 위해서?
+HelloController에서는 `@WebMvcTest`를 이용해서 테스트를 했고, PostsApiController에서는 `@SpringBootTest`를 이용해서 테스트를 진행했다.
 
-https://spring.io/guides/gs/testing-web/  
-https://wiselog.tistory.com/171  
-위 문서에 대략적인 설명이 있다.
+WebMvcTest를 쓸 때에는, Service에 대해서는 모킹을 활용하여 컨트롤러 단만 테스트한다. [참고](https://ksh-coding.tistory.com/53) [참고2](https://spring.io/guides/gs/testing-web/)
 
-webMvcTest를 쓰면 컨트롤러 하나만 테스팅이 되고, springboottest를 쓰면 전체 통합 테스트가 된다.  
-~~springboottest에서도 autoconfiguremockmvc를 넣어두면 MockMvc를 사용할 수 있다.(기본은 restTemplate 사용)~~  
-좀 더 알아보고 작성할 것
+HelloController에는 다른 의존성이 없어서 WebMvcTest를 사용한 것으로 보인다.
 
-PostsApiController에서 repository까지 검사하는 코드가 있어서 SpringBootTest를 사용한 것 같다.  
-컨트롤러나 서비스 자체에 큰 로직이 없어서, 테스팅을 위해 repository까지 검사한 것으로 보인다.
 
 ### build.gradle에서 runtimeOnly, compileOnly, implementation의 차이
 
-https://bnzn2426.tistory.com/136  
-여기에 정리가 잘 되어 있다.
+[여기에 정리가 잘 되어 있다.](https://bnzn2426.tistory.com/136)
 
 ### Mustache에서 한글 깨짐 오류
 
-https://stackoverflow.com/questions/65486789/whats-mean-enabled-ture-force-true-properties-in-this-code  
-위 내용을 추가하여 해결하였다.
+[다음 내용을 추가하여 해결하였다.](https://stackoverflow.com/questions/65486789/whats-mean-enabled-ture-force-true-properties-in-this-code)
+```properties
+server.servlet.encoding.charset=UTF-8
+server.servlet.encoding.enabled=true
+server.servlet.encoding.force=true
+```
 
 ### jquery에서 화살표 함수를 쓰면 오류가 나는 이유
 
@@ -90,21 +87,35 @@ $('button').on('click', function() {
 
 ### querydsl 오류
 
-이제 starter-data-jpa에서 포함하지 않는 것 같다.(이전엔 포함했던 것 같다. 아마도.) 그래서 따로 종속성을 등록해줘야 한다. 아래 링크를 참고하면 된다.  
-https://ittrue.tistory.com/293
+이제 starter-data-jpa에서 포함하지 않는 것 같다.(이전엔 포함했던 것 같다. 아마도.) 그래서 따로 종속성을 등록해줘야 한다. [종속성 등록 방법](https://ittrue.tistory.com/293)
 
 종속성 추가하는 게 마음에 안 들어서 그냥 JPA 기능으로 구현했다.  
-키워드를 잘 맞춰서 메소드를 생성하면 그에 맞추어서 쿼리가 생성된다. 하단 링크 참고  
-https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html  
-Find All "By" Order By Id Desc  
-메소드명 작성 시 By를 빼먹지 않도록 주의.
+키워드를 잘 맞춰서 메소드를 생성하면 그에 맞추어서 쿼리가 생성된다. [참고](https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html)
+
+```java
+public interface PostsRepository extends JpaRepository<Posts, Long> {
+  List<Posts> findAllByOrderByIdDesc();
+}
+```
 
 ### restTemplate의 exchange 오류
 
 PostsApiControllerTest에서 Posts_수정 테스트 작성 중 exchange에서 지속적으로 오류가 발생했다. 
 
-@PathVariable 설정 시, 어노테이션 파라미터로 이름을 넘겨서 해결했다.  
-@PathVariable Long id --> @PathVariable("id") Long id
+`@PathVariable` 설정 시, 어노테이션 파라미터로 이름을 넘겨서 해결했다.  
+```java
+@RequiredArgsConstructor
+@Controller
+public class IndexController {
+    /* ... */
+    @GetMapping("/posts/update/{id}")
+//    public String postsUpdate(@PathVariable Long id, Model model) {
+    public String postsUpdate(@PathVariable("id") Long id, Model model) {
+        /* ... */
+    }
+}
+```
+
 
 아래 링크에서 힌트를 얻었다.  
 https://shanepark.tistory.com/331
@@ -259,7 +270,7 @@ public class SecurityConfig {
                     .anyRequest().authenticated()
             )
 
-            // oauth2 이전에 기본적인 아이디/비밀번호 로그인부터 구현
+            // 아이디/비밀번호 로그인 기본 구현
             .formLogin(Customizer.withDefaults())
 
             // 로그아웃 기본체.
@@ -271,7 +282,6 @@ public class SecurityConfig {
 }
 ```
 ```java
-
 @RequiredArgsConstructor
 @Controller
 @Log4j2
@@ -323,6 +333,15 @@ implementation 'org.springframework.boot:spring-boot-starter-security'
 
 이게 User implements UserDetails랑 충돌하는 건지, 아니면 h2 내에 User가 이미 존재해서 터지는 건지 모르겠다. 이건 조금 더 알아봐야겠다.
 
+```java
+@Getter
+@NoArgsConstructor
+@Entity
+@Table(name = "USER_CUSTOM")
+public class User extends BaseTimeEntity {
+    /* ... */
+}
+```
 
 ## 읽는 중
 
@@ -440,5 +459,14 @@ https://github.com/woowacourse-teams/2020-6rinkers/blob/dev/back/cocktailpick-ap
 https://kbwplace.tistory.com/165  
 https://velog.io/@kimdy0915/%EC%9D%B8%EC%A6%9D-%EB%B0%A9%EC%8B%9D%EC%BF%A0%ED%82%A4-%EC%84%B8%EC%85%98-JWT%EC%97%90-%EB%8C%80%ED%95%B4-%EC%95%8C%EC%95%84%EB%B3%B4%EC%9E%90  
 세션, 토큰, 쿠키, JWT
+
+
+### 어노테이션 작동 방식
+
+어노테이션은 일종의 주석
+
+일단 달아놓으면, 어플 실행 시 패키지를 훑으면서 어노테이션마다 알맞은 resolver가 기능을 수행한다
+
+webconfig에서 resolver 체인?에 커스텀 리졸버를 추가할 수 있다
 
 </details>
